@@ -40,5 +40,38 @@ namespace CRUDwithModalPopup.Controllers
                 return Json("model validation failed!");
             }
         }
+
+        [HttpGet]
+        public JsonResult Edit(int id)
+        {
+            var product = _context.Products.Find(id);
+            return Json(product);
+        }
+
+        [HttpPost]
+        public JsonResult Update(Product product)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Products.Update(product);
+                _context.SaveChanges();
+                return Json("Products Updated Successfully!");            
+            }
+            return Json("Model validation failed!");
+        }
+
+        [HttpPost]
+        public JsonResult Delete(int id)
+        {
+            var product = _context.Products.Find(id);
+            if (product != null)
+            {
+                _context.Remove(product);
+                _context.SaveChanges();
+                return Json("Product Deleted Successfully!");
+            }
+            return Json($"Product Not Found id : {id}");
+        }
     }
 }
+
