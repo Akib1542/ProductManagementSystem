@@ -1,22 +1,32 @@
-﻿let sortOrder = 'asc'; 
+﻿let sortOrder = 'asc';
 let sortColumn = 'price';
 let products = [];
+
 $(document).ready(function () {
     GetProducts();
+
+    // Sort by Price
     $('#priceHeader').on('click', function () {
         sortColumn = 'price';
         sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
-        GetProducts();
+        RenderProducts();
     });
 
+    // Sort by Quantity
     $('#quantityHeader').on('click', function () {
         sortColumn = 'quantity';
         sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
-        GetProducts();
+        RenderProducts();
     });
 
+    // Trigger search on button click & Filter and display based on search query
+    $('#searchButton').on('click', function () {
+        RenderProducts(); 
+    });
+
+    // Trigger search on keyup (e.g., Enter key press)
     $('#searchInput').on('keyup', function () {
-        
+        RenderProducts(); 
     });
 });
 
@@ -28,45 +38,56 @@ function GetProducts() {
         dataType: 'json',
         contentType: 'application/json;charset=utf-8',
         success: function (response) {
-            if (response == null || response == undefined || response.length == 0) {
-                var object = '';
-                object += '<tr>';
-                object += '<td colspan="6">' + 'Products not available' + '</td>';
-                object += '</tr>';
-                $('#tblBody').html(object);
-            }
-            else {
-
-                if (sortColumn == 'price') {
-                    response.sort(function (a, b) {
-                        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-                    });
-                }
-                else {
-                    response.sort(function (a, b) {
-                        return sortOrder === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity;
-                    });
-                }
-                var object = ''; 
-                var value = 1;
-                $.each(response, function (index, item) {
-                     object += '<tr>';
-                     object += '<td>' + value++ + '</td >';
-                     object += '<td>' + item.id + '</td>';
-                     object += '<td>' + item.productName + '</td>';
-                     object += '<td>' + item.price + '</td>';
-                     object += '<td>' + item.quantity + '</td>';
-                     object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')" > Edit</a > <a href="#" class = "btn btn-danger btn-sm" onclick = "Delete(' + item.id + ')" > Delete</a></td>';
-                     object += '</tr>'
-                });
-                $('#tblBody').html(object);
-            }
+            products = response || []; // Store all the products
+            RenderProducts(); // Initial render
         },
         error: function () {
             alert('Unable to read the data');
         }
-
     });
+}
+
+/* Render Products with Sorting and Filtering */
+function RenderProducts() {
+    let searchQuery = $('#searchInput').val().toLowerCase();
+
+    // Filter the products based on the search query
+    let filteredProducts = products.filter(function (item) {
+        return item.productName.toLowerCase().includes(searchQuery) ||
+            item.price.toString().includes(searchQuery) ||
+            item.quantity.toString().includes(searchQuery);
+    });
+
+    // Sort the filtered products
+    filteredProducts.sort(function (a, b) {
+        if (sortColumn === 'price') {
+            return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+        } else if (sortColumn === 'quantity') {
+            return sortOrder === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity;
+        }
+        return 0;
+    });
+
+    // Render the products
+    var object = '';
+    if (filteredProducts.length === 0) {
+        object += '<tr>';
+        object += '<td colspan="6">No products found</td>';
+        object += '</tr>';
+    } else {
+        $.each(filteredProducts, function (index, item) {
+            object += '<tr>';
+            object += '<td>' + (index + 1) + '</td>';  
+            object += '<td>' + item.id + '</td>';   
+            object += '<td>' + item.productName + '</td>';
+            object += '<td>' + item.price + '</td>';
+            object += '<td>' + item.quantity + '</td>';
+            object += '<td><a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')">Edit</a> ' +
+                '<a href="#" class="btn btn-danger btn-sm" onclick="Delete(' + item.id + ')">Delete</a></td>';
+            object += '</tr>';
+        });
+    }
+    $('#tblBody').html(object);
 }
 
 
@@ -88,6 +109,7 @@ function Insert() {
     formData.price = $('#Price').val();
     formData.quantity = $('#Quantity').val();
 
+
     $.ajax({
         url: '/product/Insert',
         data: formData,
@@ -98,7 +120,7 @@ function Insert() {
             }
             else {
                 HideModal()
-                GetProducts();
+                RenderProducts();
                 alert(response);
             }
         },
@@ -132,7 +154,7 @@ function Validate() {
         $('#ProductName').css('border-color', 'Green');
     }
 
-    if ($('#Price').val().trim() == "") {
+    if ($('#Price').val().trim() == "" || $('#Price').val()<1) {
         $('#Price').css('border-color', 'Red');
         isValid = false;
     }
@@ -140,7 +162,7 @@ function Validate() {
         $('#Price').css('border-color', 'Green');
     }
 
-    if ($('#Quantity').val().trim() == "") {
+    if ($('#Quantity').val().trim() == "" || $('#Quantity').val()<1) {
         $('#Quantity').css('border-color', 'Red');
         isValid = false;
     }
@@ -219,7 +241,7 @@ function Update() {
             }
             else {
                 HideModal()
-                GetProducts();
+                RenderProducts();
                 alert(response);
             }
         },
