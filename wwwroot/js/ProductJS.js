@@ -1,39 +1,71 @@
-﻿$(document).ready(function () {
+﻿let sortOrder = 'asc'; 
+let sortColumn = 'price';
+let products = [];
+$(document).ready(function () {
     GetProducts();
+    $('#priceHeader').on('click', function () {
+        sortColumn = 'price';
+        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
+        GetProducts();
+    });
+
+    $('#quantityHeader').on('click', function () {
+        sortColumn = 'quantity';
+        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; // Toggle sort order
+        GetProducts();
+    });
+
+    $('#searchInput').on('keyup', function () {
+        
+    });
 });
 
 /* Read Data */
 function GetProducts() {
     $.ajax({
-        url:'/product/GetProducts',
-        type:'GET',
-        dataType:'json',
+        url: '/product/GetProducts',
+        type: 'GET',
+        dataType: 'json',
         contentType: 'application/json;charset=utf-8',
         success: function (response) {
             if (response == null || response == undefined || response.length == 0) {
                 var object = '';
                 object += '<tr>';
-                object += '<td colspan="5">' + 'Products not available' + '</td>';
+                object += '<td colspan="6">' + 'Products not available' + '</td>';
                 object += '</tr>';
                 $('#tblBody').html(object);
             }
             else {
-                var object = '';
+
+                if (sortColumn == 'price') {
+                    response.sort(function (a, b) {
+                        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+                    });
+                }
+                else {
+                    response.sort(function (a, b) {
+                        return sortOrder === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity;
+                    });
+                }
+                var object = ''; 
+                var value = 1;
                 $.each(response, function (index, item) {
-                    object += '<tr>';
-                    object += '<td>' + item.id + '</td>';
-                    object += '<td>' + item.productName + '</td>';
-                    object += '<td>' + item.price + '</td>';
-                    object += '<td>' + item.quantity + '</td>';
-                    object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')" > Edit</a > <a href="#" class = "btn btn-danger btn-sm" onclick = "Delete(' + item.id + ')" > Delete</a></td>';
+                     object += '<tr>';
+                     object += '<td>' + value++ + '</td >';
+                     object += '<td>' + item.id + '</td>';
+                     object += '<td>' + item.productName + '</td>';
+                     object += '<td>' + item.price + '</td>';
+                     object += '<td>' + item.quantity + '</td>';
+                     object += '<td> <a href="#" class="btn btn-primary btn-sm" onclick="Edit(' + item.id + ')" > Edit</a > <a href="#" class = "btn btn-danger btn-sm" onclick = "Delete(' + item.id + ')" > Delete</a></td>';
+                     object += '</tr>'
                 });
                 $('#tblBody').html(object);
             }
         },
-        error: function() {
-           alert('Unable to read the data');
+        error: function () {
+            alert('Unable to read the data');
         }
-        
+
     });
 }
 
@@ -56,7 +88,6 @@ function Insert() {
     formData.price = $('#Price').val();
     formData.quantity = $('#Quantity').val();
 
-
     $.ajax({
         url: '/product/Insert',
         data: formData,
@@ -66,7 +97,7 @@ function Insert() {
                 alert('Unable to save data!');
             }
             else {
-                HideModal() 
+                HideModal()
                 GetProducts();
                 alert(response);
             }
@@ -137,8 +168,8 @@ $('#Quantity').change(function () {
 function Edit(id) {
     $.ajax({
         url: 'product/Edit?id=' + id,
-        type:'get',
-        contentType:'application/json;charset=utf-8',
+        type: 'get',
+        contentType: 'application/json;charset=utf-8',
         dataType: 'json',
         success: function (response) {
             if (response == null || response == undefined) {
@@ -171,6 +202,7 @@ function Update() {
         return false;
     }
     var formData = new Object();
+
     formData.id = $('#Id').val();
     formData.productName = $('#ProductName').val();
     formData.price = $('#Price').val();
